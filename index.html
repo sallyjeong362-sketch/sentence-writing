@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>문장 템플릿 바꿔쓰기 워크시트 메이커</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; color: #2c2c2a; }
+.app { max-width: 860px; width: 100%; }
+h1 { font-size: 21px; font-weight: 600; color: #1a1a18; margin-bottom: 0.25rem; }
+.subtitle { font-size: 14px; color: #888; margin-bottom: 1.5rem; }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; border-bottom: 1px solid #e8e8e6; flex-wrap: wrap; }
+.tab-btn { background: transparent; border: none; padding: 0.65rem 0.9rem; font-size: 14px; font-weight: 500; color: #888; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab-btn:hover { color: #185FA5; }
+.tab-btn.active { color: #185FA5; border-bottom-color: #185FA5; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card { background: #fff; border: 1px solid #e8e8e6; border-radius: 14px; padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; }
+.card h2 { font-size: 15px; font-weight: 600; margin-bottom: 0.75rem; color: #1a1a18; }
+.card h3 { font-size: 13px; font-weight: 600; margin: 1rem 0 0.5rem; color: #444; }
+.hint { font-size: 12.5px; color: #999; line-height: 1.6; margin-bottom: 0.75rem; }
+.hint code { background: #f0f0ee; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+label { display: block; font-size: 12.5px; color: #666; margin-bottom: 4px; font-weight: 500; }
+input[type=text], input[type=number], textarea, select {
+  width: 100%; border: 1px solid #dcdcd8; border-radius: 8px; padding: 0.6rem 0.75rem; font-size: 14px; font-family: inherit; background: #fafaf8; color: #1a1a18;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: #185FA5; background: #fff; }
+textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
+.field { margin-bottom: 0.85rem; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.row3 { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 0.75rem; align-items: end; }
+
+.btn { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0.6rem 1.1rem; font-size: 13.5px; cursor: pointer; color: #444; font-weight: 500; }
+.btn:hover { background: #f0f0ee; }
+.btn.primary { background: #185FA5; color: #fff; border-color: transparent; }
+.btn.primary:hover { background: #0c447c; }
+.btn.danger { color: #b33; border-color: #eecccc; }
+.btn.danger:hover { background: #fdf0f0; }
+.btn.small { padding: 0.35rem 0.7rem; font-size: 12.5px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 0.5rem; }
+
+.empty-note { color: #bbb; font-size: 12.5px; }
+.muted { color: #aaa; font-size: 12px; }
+.count-badge { background: #185FA5; color: #fff; border-radius: 10px; padding: 0 6px; font-size: 11px; }
+
+/* library / template cards */
+.tpl-card { border: 1px solid #e8e8e6; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 10px; background: #fafaf8; }
+.tpl-card .tpl-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.tpl-pattern { font-size: 14.5px; font-weight: 600; color: #1a1a18; line-height: 2.5; padding-top: 0.3em; }
+.tpl-blank { display: inline-block; min-width: 3.2em; border-bottom: 1.5px solid #185FA5; height: 1.1em; margin: 0 3px; vertical-align: bottom; position: relative; }
+.tpl-blank-label { position: absolute; top: -1.3em; left: 0; right: 0; text-align: center; font-size: 10px; color: #185FA5; white-space: nowrap; }
+.tpl-meaning { font-size: 13px; color: #185FA5; margin-top: 4px; }
+.tpl-example { font-size: 12.5px; color: #666; margin-top: 3px; }
+.tpl-example-ko { font-size: 12px; color: #999; margin-top: 1px; }
+.tpl-cat { display: inline-block; background: #eef4fb; color: #185FA5; border-radius: 5px; padding: 1px 7px; font-size: 11.5px; margin-top: 4px; }
+.tpl-group-tag { display: inline-block; background: #f4eefb; color: #7a3fa5; border-radius: 5px; padding: 1px 7px; font-size: 11.5px; margin-top: 4px; margin-left: 4px; }
+.tpl-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.group-block { border: 1px solid #e8e8e6; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+.group-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #fafaf8; cursor: pointer; user-select: none; }
+.group-header:hover { background: #f0f0ee; }
+.group-toggle { font-size: 11px; color: #888; width: 10px; }
+.group-name { font-size: 14px; font-weight: 600; color: #1a1a18; flex: 1; }
+.group-count { font-size: 12px; color: #888; }
+.group-block .tpl-list-inner { padding: 10px; }
+
+.type-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; background: #fafaf8; border: 1px solid #e8e8e6; border-radius: 10px; padding: 0.75rem 0.9rem; }
+.type-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #333; font-weight: 400; cursor: pointer; line-height: 1.5; }
+.type-check input { width: auto; margin-top: 3px; }
+
+.warn-box { background: #fff8e8; border: 1px solid #f0dca0; color: #7a5c00; border-radius: 8px; padding: 0.7rem 0.9rem; font-size: 13px; margin-bottom: 0.75rem; }
+.ws-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+.check-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #555; }
+
+/* worksheet (print) */
+.worksheet { background: #fff; border: 1px solid #e8e8e6; border-radius: 14px; padding: 1.5rem; overflow-x: auto; }
+.ws-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ws-table caption { caption-side: top; }
+.ws-title-row td { background: #cfe0d0; font-size: 16px; font-weight: 700; text-align: center; padding: 10px; border: 1px solid #1a1a18; }
+.ws-title-row .ws-name-cell { background: #fff; font-weight: 600; font-size: 13px; text-align: left; color: #b33; }
+.ws-week-row td { background: #e4edE5; font-size: 12.5px; text-align: center; padding: 6px; border: 1px solid #1a1a18; font-weight: 600; }
+.ws-head-row th { background: #cfe0d0; font-size: 12px; font-weight: 700; padding: 8px 6px; border: 1px solid #1a1a18; text-align: center; }
+.ws-table td { border: 1px solid #1a1a18; padding: 8px 10px; vertical-align: top; }
+.ws-col-date { width: 13%; font-size: 11.5px; font-weight: 600; text-align: center; }
+.ws-col-cat { width: 12%; font-size: 12px; text-align: center; }
+.ws-col-pattern { width: 22%; line-height: 2.2; padding-top: 12px; }
+.ws-col-def { width: 53%; }
+.def-ko { color: #185FA5; font-weight: 600; }
+.def-ex { color: #b33; margin-top: 3px; }
+.def-ex-ko { color: #999; margin-top: 2px; font-size: 12px; }
+.write-row td { background: #fff; }
+.write-label { font-size: 11.5px; color: #999; margin-bottom: 8px; }
+.ws-skeleton-line { font-size: 15px; line-height: 2.6; }
+.ws-tpl-blank { display: inline-block; min-width: 5.5em; border-bottom: 1px solid #666; height: 1.4em; margin: 0 5px; vertical-align: bottom; position: relative; }
+.ws-tpl-blank-label { position: absolute; top: -1.3em; left: 0; right: 0; text-align: center; font-size: 10px; color: #aaa; white-space: nowrap; }
+.no-labels .ws-tpl-blank-label { display: none; }
+.no-example .def-ex, .no-example .def-ex-ko { display: none; }
+.no-meaning .def-ko { display: none; }
+
+.group-color-0 .ws-col-date { background: #d7dfe8; }
+.group-color-1 .ws-col-date { background: #f4dbe0; }
+.group-color-2 .ws-col-date { background: #ded7ec; }
+.group-color-3 .ws-col-date { background: #d7ece0; }
+.group-color-4 .ws-col-date { background: #f4ecd7; }
+
+@media print {
+  body * { visibility: hidden; }
+  .worksheet, .worksheet * { visibility: visible; }
+  .worksheet { position: absolute; top: 0; left: 0; width: 100%; border: none; padding: 0; border-radius: 0; overflow: visible; }
+  .ws-controls { display: none !important; }
+}
+@media (max-width: 640px) {
+  .row2, .row3 { grid-template-columns: 1fr; }
+  .type-checks { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>✍️ 문장 템플릿 바꿔쓰기 워크시트</h1>
+  <p class="subtitle">영어 문장 템플릿(구문)을 한글 뜻과 함께 제시하고, 학생이 그 뼈대를 이용해 자신만의 문장으로 바꿔 쓰는 연습지를 만들어보세요.</p>
+  <datalist id="groupOptions"></datalist>
+  <datalist id="catOptions"></datalist>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="mine">📋 내 템플릿 <span class="count-badge" id="tplCountBadge">0</span></button>
+    <button class="tab-btn" data-tab="library">📚 템플릿 참조</button>
+    <button class="tab-btn" data-tab="add">➕ 직접 추가</button>
+    <button class="tab-btn" data-tab="worksheet">🖨️ 워크시트 만들기</button>
+  </nav>
+
+  <!-- 내 템플릿 -->
+  <section id="tab-mine" class="tab-panel active">
+    <div class="card">
+      <h2>내 템플릿 목록</h2>
+      <p class="hint">템플릿 참조 탭에서 불러오거나, 직접 추가 탭에서 새로 만든 템플릿이 여기 모입니다. 워크시트를 만들 때 이 목록에서 원하는 항목을 골라 사용합니다.</p>
+      <div id="tplListWrap"></div>
+      <div class="btn-row">
+        <button class="btn" id="exportBtn">⬇️ 백업(JSON) 내보내기</button>
+        <button class="btn" id="importBtn">⬆️ 백업 불러오기</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="btn danger" id="clearAllBtn">🗑️ 전체 삭제</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 템플릿 참조 라이브러리 -->
+  <section id="tab-library" class="tab-panel">
+    <div class="card">
+      <h2>기본 제공 템플릿</h2>
+      <p class="hint">자주 쓰이는 영어 문형(구문)을 미리 만들어 두었습니다. 마음에 드는 템플릿의 "내 템플릿에 추가"를 누르면 위 목록으로 복사되어, 자유롭게 수정하거나 워크시트에 사용할 수 있어요.</p>
+      <div id="libraryListWrap"></div>
+    </div>
+  </section>
+
+  <!-- 직접 추가 -->
+  <section id="tab-add" class="tab-panel">
+    <div class="card">
+      <h2>템플릿 직접 만들기</h2>
+      <p class="hint">
+        빈칸은 <code>{힌트}</code> 형식(예: <code>{형용사}</code>) 또는 밑줄 3개 이상(<code>___</code>)으로 표시하세요.<br>
+        예: <code>It is {형용사} for {대상} to {동사원형}.</code> 로 입력하면 학생용 빈칸에 "형용사 / 대상 / 동사원형" 힌트가 함께 표시됩니다.
+      </p>
+      <div class="row2">
+        <div class="field"><label>그룹 / Day (예: Day1 — 비워두면 미분류로 저장돼요)</label><input type="text" id="manualGroup" list="groupOptions" placeholder="예: Day1"></div>
+        <div class="field"><label>카테고리 / 문형 이름 (선택)</label><input type="text" id="manualCat" list="catOptions" placeholder="예: 가주어/진주어"></div>
+      </div>
+      <div class="field">
+        <label>템플릿 문장 (영어, 빈칸 표시)</label>
+        <input type="text" id="manualPattern" placeholder="예: It is {형용사} for {대상} to {동사원형}.">
+      </div>
+      <div class="field">
+        <label>한글 뜻 / 설명</label>
+        <input type="text" id="manualMeaning" placeholder="예: ~가 …하는 것은 ~하다 (가주어 it, 진주어 to부정사)">
+      </div>
+      <div class="row2">
+        <div class="field"><label>예문 (영어, 선택)</label><input type="text" id="manualExample" placeholder="예: It is easy for her to solve the problem."></div>
+        <div class="field"><label>예문 해석 (한글, 선택)</label><input type="text" id="manualExampleKo" placeholder="예: 그녀가 그 문제를 푸는 것은 쉽다."></div>
+      </div>
+      <button class="btn primary" id="manualAddBtn">내 템플릿에 추가</button>
+    </div>
+  </section>
+
+  <!-- 워크시트 만들기 -->
+  <section id="tab-worksheet" class="tab-panel">
+    <div class="card">
+      <h2>워크시트 옵션</h2>
+      <div class="row3">
+        <div class="field"><label>클래스 / 워크시트 제목</label><input type="text" id="wsClassName" value="English Writing Class"></div>
+        <div class="field"><label>주차 / 날짜 표시</label><input type="text" id="wsWeekLabel" value="Week 1"></div>
+        <div class="field"><label>이름 입력란 표시</label>
+          <select id="wsShowName"><option value="1">표시</option><option value="0">숨김</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>포함할 템플릿 선택</label>
+        <div class="type-checks" id="tplChecks"></div>
+        <div class="btn-row">
+          <button class="btn small" id="selectAllTplBtn">전체 선택</button>
+          <button class="btn small" id="clearAllTplBtn">전체 해제</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>표시 옵션</label>
+        <div class="type-checks">
+          <label class="type-check"><input type="checkbox" id="optShowMeaning" checked> 한글 뜻 표시</label>
+          <label class="type-check"><input type="checkbox" id="optShowExample" checked> 주어진 예문 표시</label>
+          <label class="type-check"><input type="checkbox" id="optShowExampleKo"> 예문 해석 표시</label>
+          <label class="type-check"><input type="checkbox" id="optShowBlankLabel" checked> 빈칸 힌트 라벨 표시 (예: 형용사)</label>
+          <label class="type-check"><input type="checkbox" id="optDoubleLine"> 빈칸 문장 줄 2번 반복 (연습 2회)</label>
+          <label class="type-check"><input type="checkbox" id="optShuffle"> 문항 순서 섞기</label>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="generateBtn">워크시트 만들기</button>
+      </div>
+    </div>
+
+    <div id="worksheetWrap"></div>
+  </section>
+</div>
+
+<script>
+/* ---------------- storage ---------------- */
+const STORAGE_KEY = 'sentenceTemplates';
+let templates = loadTemplates();
+
+function loadTemplates() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function saveTemplates() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+}
+function genId() {
+  return 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+const DEFAULT_GROUP = '미분류';
+function getGroupOf(t) { return (t.group && t.group.trim()) || DEFAULT_GROUP; }
+function naturalCompare(a, b) { return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }); }
+function getUniqueGroups() { return Array.from(new Set(templates.map(getGroupOf))).sort(naturalCompare); }
+function refreshGroupOptions() {
+  const dl = document.getElementById('groupOptions');
+  dl.innerHTML = getUniqueGroups().map(g => `<option value="${escapeAttr(g)}">`).join('');
+  const catDl = document.getElementById('catOptions');
+  const cats = Array.from(new Set(templates.map(t => t.category).filter(Boolean)));
+  catDl.innerHTML = cats.map(c => `<option value="${escapeAttr(c)}">`).join('');
+}
+
+/* ---------------- built-in library ---------------- */
+const BUILTIN_TEMPLATES = [
+  { pattern: 'It is {형용사} for {대상} to {동사원형}.', meaning: '~가 …하는 것은 ~하다 (가주어 it, 진주어 to부정사)', example: 'It is easy for her to solve the problem.', exampleKo: '그녀가 그 문제를 푸는 것은 쉽다.', category: '가주어/진주어' },
+  { pattern: '{주어} is so {형용사} that {주어2} can\'t {동사원형}.', meaning: '너무 ~해서 …할 수 없다 (so ~ that 구문)', example: 'The box is so heavy that I can\'t lift it.', exampleKo: '그 상자는 너무 무거워서 나는 들 수 없다.', category: 'so~that 구문' },
+  { pattern: 'The more {형용사구1}, the more {형용사구2}.', meaning: '~할수록 더 …하다 (비례 비교)', example: 'The more you practice, the more confident you become.', exampleKo: '연습할수록 더 자신감이 생긴다.', category: '비례 비교급' },
+  { pattern: 'Not only {A} but also {B}.', meaning: 'A뿐만 아니라 B도', example: 'Not only did she win the race but also broke the record.', exampleKo: '그녀는 경주에서 이겼을 뿐만 아니라 기록도 깼다.', category: '상관접속사' },
+  { pattern: 'If I were {대상/상황}, I would {동사원형}.', meaning: '만약 내가 ~라면, …할 텐데 (가정법 과거)', example: 'If I were you, I would apologize first.', exampleKo: '내가 너라면 먼저 사과할 텐데.', category: '가정법 과거' },
+  { pattern: '{주어} is used to {동사원형}.', meaning: '~은 …하는 데 사용된다', example: 'This tool is used to fix bicycles.', exampleKo: '이 도구는 자전거를 고치는 데 사용된다.', category: '수동태 표현' },
+  { pattern: 'Whenever {상황}, I {행동}.', meaning: '~할 때마다 나는 …한다', example: 'Whenever I feel tired, I take a short walk.', exampleKo: '피곤할 때마다 나는 짧게 산책을 한다.', category: '시간 부사절' },
+  { pattern: '{주어} was {형용사/분사} because {이유}.', meaning: '~은 …때문에 ~했다 (이유 표현)', example: 'I was surprised because the ending was unexpected.', exampleKo: '결말이 예상 밖이어서 나는 놀랐다.', category: '이유 표현' },
+  { pattern: '{대상} is one of the most {형용사} {명사} I have ever {과거분사}.', meaning: '~은 내가 지금까지 …해 본 것 중 가장 ~한 …이다', example: 'This is one of the most beautiful places I have ever visited.', exampleKo: '이곳은 내가 지금까지 가본 곳 중 가장 아름다운 곳이다.', category: '최상급 경험 표현' },
+  { pattern: 'I realized that {상황/사실}.', meaning: '나는 ~라는 것을 깨달았다', example: 'I realized that I had forgotten my keys.', exampleKo: '나는 열쇠를 두고 온 것을 깨달았다.', category: '명사절(that)' },
+  { pattern: 'I feel {형용사} when I {동사원형}.', meaning: '나는 ~할 때 …한 기분이 든다', example: 'I feel confident when I give my speech.', exampleKo: '나는 발표할 때 자신감을 느낀다.', category: '감정 표현' },
+  { pattern: '{주어} challenged {대상} to {동사원형}.', meaning: '~은 …에게 ~하도록 도전(제안)했다', example: 'My friend challenged me to a race.', exampleKo: '내 친구는 나에게 경주를 하자고 도전했다.', category: '도전/제안 표현' }
+];
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'worksheet') renderTplChecks();
+  });
+});
+
+/* ---------------- template parsing / rendering ---------------- */
+function parseTemplateSegments(pattern) {
+  const segments = [];
+  let lastIndex = 0;
+  const re = /\{([^{}]*)\}|_{3,}/g;
+  let m;
+  while ((m = re.exec(pattern)) !== null) {
+    if (m.index > lastIndex) segments.push({ type: 'text', value: pattern.slice(lastIndex, m.index) });
+    segments.push({ type: 'blank', label: m[1] !== undefined ? m[1].trim() : '' });
+    lastIndex = re.lastIndex;
+  }
+  if (lastIndex < pattern.length) segments.push({ type: 'text', value: pattern.slice(lastIndex) });
+  return segments;
+}
+function countBlanks(pattern) {
+  return parseTemplateSegments(pattern).filter(s => s.type === 'blank').length;
+}
+function renderPatternPreview(pattern) {
+  return parseTemplateSegments(pattern).map(seg => {
+    if (seg.type === 'text') return escapeHtml(seg.value);
+    const label = seg.label ? `<span class="tpl-blank-label">${escapeHtml(seg.label)}</span>` : '';
+    return `<span class="tpl-blank">${label}</span>`;
+  }).join('');
+}
+function renderSkeletonLine(pattern) {
+  return parseTemplateSegments(pattern).map(seg => {
+    if (seg.type === 'text') return escapeHtml(seg.value);
+    const label = seg.label ? `<span class="ws-tpl-blank-label">${escapeHtml(seg.label)}</span>` : '';
+    return `<span class="ws-tpl-blank">${label}</span>`;
+  }).join('');
+}
+
+/* ---------------- my template list rendering ---------------- */
+let editingId = null;
+let openGroups = new Set();
+
+function renderTplList() {
+  document.getElementById('tplCountBadge').textContent = templates.length;
+  const wrap = document.getElementById('tplListWrap');
+  if (templates.length === 0) {
+    wrap.innerHTML = '<p class="empty-note">아직 등록된 템플릿이 없어요. "템플릿 참조" 탭에서 불러오거나 "직접 추가" 탭에서 새로 만들어보세요.</p>';
+    return;
+  }
+  const groups = getUniqueGroups();
+  wrap.innerHTML = groups.map(g => {
+    const list = templates.filter(t => getGroupOf(t) === g);
+    const isOpen = openGroups.has(g);
+    return `
+      <div class="group-block">
+        <div class="group-header" onclick="toggleGroup('${escapeAttr(g)}')">
+          <span class="group-toggle">${isOpen ? '▾' : '▸'}</span>
+          <span class="group-name">${escapeHtml(g)}</span>
+          <span class="group-count">${list.length}개</span>
+          <button class="btn small danger" onclick="event.stopPropagation(); deleteGroupTemplates('${escapeAttr(g)}')">그룹 삭제</button>
+        </div>
+        ${isOpen ? `<div class="tpl-list-inner">${list.map(t => renderTplCard(t)).join('')}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function renderTplCard(t) {
+  if (editingId === t.id) {
+    return `<div class="tpl-card">
+      <div class="row2" style="margin-bottom:6px;">
+        <div><label>그룹/Day</label><input type="text" id="edit-group" value="${escapeAttr(t.group || '')}" list="groupOptions"></div>
+        <div><label>카테고리</label><input type="text" id="edit-cat" value="${escapeAttr(t.category || '')}" list="catOptions"></div>
+      </div>
+      <div style="margin-bottom:6px;"><label>템플릿 문장</label><input type="text" id="edit-pattern" value="${escapeAttr(t.pattern)}"></div>
+      <div style="margin-bottom:6px;"><label>한글 뜻</label><input type="text" id="edit-meaning" value="${escapeAttr(t.meaning || '')}"></div>
+      <div class="row2" style="margin-bottom:6px;">
+        <div><label>예문</label><input type="text" id="edit-example" value="${escapeAttr(t.example || '')}"></div>
+        <div><label>예문 해석</label><input type="text" id="edit-exampleKo" value="${escapeAttr(t.exampleKo || '')}"></div>
+      </div>
+      <button class="btn small primary" onclick="saveEdit('${t.id}')">저장</button>
+      <button class="btn small" onclick="cancelEdit()">취소</button>
+    </div>`;
+  }
+  return `<div class="tpl-card">
+    <div class="tpl-top">
+      <div>
+        <div class="tpl-pattern">${renderPatternPreview(t.pattern)}</div>
+        ${t.meaning ? `<div class="tpl-meaning">${escapeHtml(t.meaning)}</div>` : ''}
+        ${t.example ? `<div class="tpl-example">${escapeHtml(t.example)}</div>` : ''}
+        ${t.exampleKo ? `<div class="tpl-example-ko">${escapeHtml(t.exampleKo)}</div>` : ''}
+        ${t.category ? `<span class="tpl-cat">${escapeHtml(t.category)}</span>` : ''}
+      </div>
+      <div class="tpl-actions">
+        <button class="btn small" onclick="startEdit('${t.id}')">수정</button>
+        <button class="btn small danger" onclick="deleteTemplate('${t.id}')">삭제</button>
+      </div>
+    </div>
+  </div>`;
+}
+function toggleGroup(g) {
+  if (openGroups.has(g)) openGroups.delete(g);
+  else openGroups.add(g);
+  renderTplList();
+}
+function deleteGroupTemplates(g) {
+  const count = templates.filter(t => getGroupOf(t) === g).length;
+  if (!confirm(`"${g}" 그룹의 템플릿 ${count}개를 모두 삭제할까요? 되돌릴 수 없습니다.`)) return;
+  templates = templates.filter(t => getGroupOf(t) !== g);
+  openGroups.delete(g);
+  saveTemplates();
+  renderTplList();
+  refreshGroupOptions();
+}
+function startEdit(id) { editingId = id; renderTplList(); }
+function cancelEdit() { editingId = null; renderTplList(); }
+function saveEdit(id) {
+  const t = templates.find(x => x.id === id);
+  if (!t) return;
+  const pattern = document.getElementById('edit-pattern').value.trim();
+  if (!pattern) { alert('템플릿 문장을 입력해주세요.'); return; }
+  t.group = document.getElementById('edit-group').value.trim();
+  t.category = document.getElementById('edit-cat').value.trim();
+  t.pattern = pattern;
+  t.meaning = document.getElementById('edit-meaning').value.trim();
+  t.example = document.getElementById('edit-example').value.trim();
+  t.exampleKo = document.getElementById('edit-exampleKo').value.trim();
+  editingId = null;
+  saveTemplates();
+  renderTplList();
+  refreshGroupOptions();
+}
+function deleteTemplate(id) {
+  if (!confirm('이 템플릿을 삭제할까요?')) return;
+  templates = templates.filter(x => x.id !== id);
+  saveTemplates();
+  renderTplList();
+  refreshGroupOptions();
+}
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  if (templates.length === 0) return;
+  if (!confirm('내 템플릿을 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
+  templates = [];
+  saveTemplates();
+  renderTplList();
+  refreshGroupOptions();
+});
+
+/* ---------------- export / import ---------------- */
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(templates, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sentence-templates-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data)) throw new Error('invalid');
+      let added = 0;
+      data.forEach(d => {
+        if (!d.pattern) return;
+        templates.push({
+          id: genId(),
+          group: d.group ? String(d.group).trim() : '',
+          category: d.category ? String(d.category).trim() : '',
+          pattern: String(d.pattern).trim(),
+          meaning: String(d.meaning || '').trim(),
+          example: String(d.example || '').trim(),
+          exampleKo: String(d.exampleKo || '').trim(),
+          createdAt: Date.now()
+        });
+        added++;
+      });
+      saveTemplates();
+      renderTplList();
+      refreshGroupOptions();
+      alert(added + '개의 템플릿을 불러왔어요.');
+    } catch (err) {
+      alert('올바른 백업 파일이 아니에요.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ---------------- library ---------------- */
+function renderLibrary() {
+  const wrap = document.getElementById('libraryListWrap');
+  wrap.innerHTML = BUILTIN_TEMPLATES.map((t, i) => `
+    <div class="tpl-card">
+      <div class="tpl-top">
+        <div>
+          <div class="tpl-pattern">${renderPatternPreview(t.pattern)}</div>
+          <div class="tpl-meaning">${escapeHtml(t.meaning)}</div>
+          <div class="tpl-example">${escapeHtml(t.example)}</div>
+          <div class="tpl-example-ko">${escapeHtml(t.exampleKo)}</div>
+          <span class="tpl-cat">${escapeHtml(t.category)}</span>
+        </div>
+        <div class="tpl-actions">
+          <button class="btn small primary" onclick="addFromLibrary(${i})">내 템플릿에 추가</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function addFromLibrary(i) {
+  const t = BUILTIN_TEMPLATES[i];
+  templates.push({
+    id: genId(),
+    group: '',
+    category: t.category,
+    pattern: t.pattern,
+    meaning: t.meaning,
+    example: t.example,
+    exampleKo: t.exampleKo,
+    createdAt: Date.now()
+  });
+  saveTemplates();
+  renderTplList();
+  refreshGroupOptions();
+  alert('내 템플릿에 추가했어요. "내 템플릿" 탭에서 확인할 수 있어요.');
+}
+
+/* ---------------- manual add ---------------- */
+document.getElementById('manualAddBtn').addEventListener('click', () => {
+  const pattern = document.getElementById('manualPattern').value.trim();
+  const meaning = document.getElementById('manualMeaning').value.trim();
+  const example = document.getElementById('manualExample').value.trim();
+  const exampleKo = document.getElementById('manualExampleKo').value.trim();
+  const group = document.getElementById('manualGroup').value.trim();
+  const category = document.getElementById('manualCat').value.trim();
+  if (!pattern) { alert('템플릿 문장을 입력해주세요.'); return; }
+  if (countBlanks(pattern) === 0) {
+    if (!confirm('빈칸이 없는 템플릿이에요 ({힌트} 또는 ___ 로 빈칸을 표시할 수 있어요). 그래도 추가할까요?')) return;
+  }
+  templates.push({ id: genId(), group, category, pattern, meaning, example, exampleKo, createdAt: Date.now() });
+  saveTemplates();
+  renderTplList();
+  refreshGroupOptions();
+  ['manualPattern', 'manualMeaning', 'manualExample', 'manualExampleKo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('manualPattern').focus();
+  alert('템플릿을 추가했어요.');
+});
+
+/* ---------------- worksheet: template selection ---------------- */
+function renderTplChecks() {
+  const wrap = document.getElementById('tplChecks');
+  if (templates.length === 0) {
+    wrap.innerHTML = '<p class="empty-note">먼저 "내 템플릿"에 템플릿을 추가해주세요.</p>';
+    return;
+  }
+  wrap.innerHTML = templates.map(t => `
+    <label class="type-check">
+      <input type="checkbox" class="tpl-chk" value="${t.id}" checked>
+      <span>${escapeHtml(t.pattern)} ${t.category ? `<span class="muted">(${escapeHtml(t.category)})</span>` : ''}</span>
+    </label>
+  `).join('');
+}
+document.getElementById('selectAllTplBtn').addEventListener('click', () => {
+  document.querySelectorAll('.tpl-chk').forEach(c => c.checked = true);
+});
+document.getElementById('clearAllTplBtn').addEventListener('click', () => {
+  document.querySelectorAll('.tpl-chk').forEach(c => c.checked = false);
+});
+
+/* ---------------- worksheet generation ---------------- */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+document.getElementById('generateBtn').addEventListener('click', () => {
+  const selectedIds = Array.from(document.querySelectorAll('.tpl-chk:checked')).map(c => c.value);
+  if (selectedIds.length === 0) { alert('워크시트에 포함할 템플릿을 하나 이상 선택해주세요.'); return; }
+  let selected = templates.filter(t => selectedIds.includes(t.id));
+
+  const opts = {
+    className: document.getElementById('wsClassName').value.trim() || 'English Writing Class',
+    weekLabel: document.getElementById('wsWeekLabel').value.trim() || 'Week 1',
+    showName: document.getElementById('wsShowName').value === '1',
+    showMeaning: document.getElementById('optShowMeaning').checked,
+    showExample: document.getElementById('optShowExample').checked,
+    showExampleKo: document.getElementById('optShowExampleKo').checked,
+    showBlankLabel: document.getElementById('optShowBlankLabel').checked,
+    doubleLine: document.getElementById('optDoubleLine').checked,
+  };
+  if (document.getElementById('optShuffle').checked) selected = shuffle(selected);
+
+  renderWorksheet(selected, opts);
+});
+
+const ROW_COLORS = 5;
+function renderWorksheet(list, opts) {
+  const wrap = document.getElementById('worksheetWrap');
+  const groupColorMap = {};
+  let colorIdx = 0;
+  function colorClassFor(t) {
+    const g = getGroupOf(t);
+    if (!(g in groupColorMap)) { groupColorMap[g] = colorIdx % ROW_COLORS; colorIdx++; }
+    return 'group-color-' + groupColorMap[g];
+  }
+
+  const rowsHtml = list.map(t => {
+    const cc = colorClassFor(t);
+    const skeleton = renderSkeletonLine(t.pattern);
+    return `
+      <tr class="tpl-row ${cc}">
+        <td class="ws-col-date">${escapeHtml(getGroupOf(t) === '미분류' ? '' : getGroupOf(t))}</td>
+        <td class="ws-col-pattern"><strong>${renderPatternPreview(t.pattern)}</strong></td>
+        <td class="ws-col-cat">${escapeHtml(t.category || '')}</td>
+        <td class="ws-col-def">
+          <div class="def-ko">${escapeHtml(t.meaning || '')}</div>
+          ${t.example ? `<div class="def-ex">${escapeHtml(t.example)}</div>` : ''}
+          ${t.exampleKo ? `<div class="def-ex-ko">${escapeHtml(t.exampleKo)}</div>` : ''}
+        </td>
+      </tr>
+      <tr class="write-row">
+        <td colspan="4">
+          <div class="write-label">Write your own sentence =></div>
+          <div class="ws-skeleton-line">${skeleton}</div>
+          ${opts.doubleLine ? `<div class="ws-skeleton-line">${skeleton}</div>` : ''}
+        </td>
+      </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="ws-controls">
+      <button class="btn primary" id="printBtn">🖨️ 인쇄하기</button>
+      <label class="check-row"><input type="checkbox" id="toggleMeaning" ${opts.showMeaning ? 'checked' : ''}> 뜻 표시</label>
+      <label class="check-row"><input type="checkbox" id="toggleExample" ${opts.showExample ? 'checked' : ''}> 예문 표시</label>
+      <label class="check-row"><input type="checkbox" id="toggleLabels" ${opts.showBlankLabel ? 'checked' : ''}> 빈칸 힌트 표시</label>
+    </div>
+    <div class="worksheet ${opts.showMeaning ? '' : 'no-meaning'} ${opts.showExample ? '' : 'no-example'} ${opts.showBlankLabel ? '' : 'no-labels'}" id="worksheetEl">
+      <table class="ws-table">
+        <tbody>
+          <tr class="ws-title-row">
+            <td colspan="${opts.showName ? 3 : 4}">${escapeHtml(opts.className)}</td>
+            ${opts.showName ? `<td class="ws-name-cell">Name: ______________</td>` : ''}
+          </tr>
+          <tr class="ws-week-row"><td colspan="4">${escapeHtml(opts.weekLabel)}</td></tr>
+          <tr class="ws-head-row">
+            <th>Date / Day</th>
+            <th>Template</th>
+            <th>Category</th>
+            <th>Definition / Example</th>
+          </tr>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>`;
+
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+  document.getElementById('toggleMeaning').addEventListener('change', e => {
+    document.getElementById('worksheetEl').classList.toggle('no-meaning', !e.target.checked);
+  });
+  document.getElementById('toggleExample').addEventListener('change', e => {
+    document.getElementById('worksheetEl').classList.toggle('no-example', !e.target.checked);
+  });
+  document.getElementById('toggleLabels').addEventListener('change', e => {
+    document.getElementById('worksheetEl').classList.toggle('no-labels', !e.target.checked);
+  });
+}
+
+/* ---------------- utils ---------------- */
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function escapeAttr(str) { return escapeHtml(str); }
+
+/* ---------------- init ---------------- */
+renderTplList();
+refreshGroupOptions();
+renderLibrary();
+renderTplChecks();
+</script>
+</body>
+</html>
