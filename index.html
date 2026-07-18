@@ -138,6 +138,7 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
     <div class="card">
       <h2>내 템플릿 목록</h2>
       <p class="hint">템플릿 참조 탭에서 불러오거나, 직접 추가 탭에서 새로 만든 템플릿이 여기 모입니다. 워크시트를 만들 때 이 목록에서 원하는 항목을 골라 사용합니다.</p>
+      <div class="field"><input type="text" id="mineSearch" placeholder="내 템플릿 검색 (문장, 뜻, 카테고리...)"></div>
       <div id="tplListWrap"></div>
       <div class="btn-row">
         <button class="btn" id="exportBtn">⬇️ 백업(JSON) 내보내기</button>
@@ -151,8 +152,12 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
   <!-- 템플릿 참조 라이브러리 -->
   <section id="tab-library" class="tab-panel">
     <div class="card">
-      <h2>기본 제공 템플릿</h2>
+      <h2>기본 제공 템플릿 <span class="count-badge" id="libCountBadge">0</span></h2>
       <p class="hint">자주 쓰이는 영어 문형(구문)을 미리 만들어 두었습니다. 마음에 드는 템플릿의 "내 템플릿에 추가"를 누르면 위 목록으로 복사되어, 자유롭게 수정하거나 워크시트에 사용할 수 있어요.</p>
+      <div class="row2">
+        <div class="field"><label>검색</label><input type="text" id="libSearch" placeholder="예: 가정법, if, 형용사, whenever..."></div>
+        <div class="field"><label>카테고리</label><select id="libCatFilter"><option value="">전체 카테고리</option></select></div>
+      </div>
       <div id="libraryListWrap"></div>
     </div>
   </section>
@@ -267,7 +272,54 @@ const BUILTIN_TEMPLATES = [
   { pattern: '{대상} is one of the most {형용사} {명사} I have ever {과거분사}.', meaning: '~은 내가 지금까지 …해 본 것 중 가장 ~한 …이다', example: 'This is one of the most beautiful places I have ever visited.', exampleKo: '이곳은 내가 지금까지 가본 곳 중 가장 아름다운 곳이다.', category: '최상급 경험 표현' },
   { pattern: 'I realized that {상황/사실}.', meaning: '나는 ~라는 것을 깨달았다', example: 'I realized that I had forgotten my keys.', exampleKo: '나는 열쇠를 두고 온 것을 깨달았다.', category: '명사절(that)' },
   { pattern: 'I feel {형용사} when I {동사원형}.', meaning: '나는 ~할 때 …한 기분이 든다', example: 'I feel confident when I give my speech.', exampleKo: '나는 발표할 때 자신감을 느낀다.', category: '감정 표현' },
-  { pattern: '{주어} challenged {대상} to {동사원형}.', meaning: '~은 …에게 ~하도록 도전(제안)했다', example: 'My friend challenged me to a race.', exampleKo: '내 친구는 나에게 경주를 하자고 도전했다.', category: '도전/제안 표현' }
+  { pattern: '{주어} challenged {대상} to {동사원형}.', meaning: '~은 …에게 ~하도록 도전(제안)했다', example: 'My friend challenged me to a race.', exampleKo: '내 친구는 나에게 경주를 하자고 도전했다.', category: '도전/제안 표현' },
+  { pattern: 'I have a {명사} who {동사구}.', meaning: '나는 …하는 ~가 있다 (관계대명사 who)', example: 'I have a friend who speaks three languages.', exampleKo: '나는 3개 국어를 하는 친구가 있다.', category: '관계대명사(who)' },
+  { pattern: 'This is the {명사} which {동사구}.', meaning: '이것은 …하는 ~이다 (관계대명사 which)', example: 'This is the book which changed my life.', exampleKo: '이것은 내 인생을 바꿔 책이다.', category: '관계대명사(which)' },
+  { pattern: 'I lost the {명사} that {동사구}.', meaning: '나는 …했던 ~을 잃어버렸다 (관계대명사 that)', example: 'I lost the watch that my father gave me.', exampleKo: '나는 아버지가 주신 시계를 잃어버렸다.', category: '관계대명사(that)' },
+  { pattern: '{현재분사구}, I {동사구}.', meaning: '~하면서(해서) 나는 …했다 (분사구문)', example: 'Feeling tired, I went to bed early.', exampleKo: '피곤해서 나는 일찍 잠자리에 들었다.', category: '분사구문' },
+  { pattern: 'I have never {과거분사} {명사구}.', meaning: '나는 한 번도 …해본 적이 없다 (현재완료 경험)', example: 'I have never eaten sushi before.', exampleKo: '나는 전에 초밥을 먹어본 적이 없다.', category: '현재완료(경험)' },
+  { pattern: '{주어} have {과거분사} {명사구} for {기간}.', meaning: '~은 …동안 계속 ~해왔다 (현재완료 계속)', example: 'I have lived in Seoul for ten years.', exampleKo: '나는 서울에서 10년째 살고 있다.', category: '현재완료(계속)' },
+  { pattern: 'By the time {과거시제절}, {주어} had already {과거분사}.', meaning: '~했을 때, 이미 …했었다 (과거완료)', example: 'By the time we arrived, the movie had already started.', exampleKo: '우리가 도착했을 때, 영화는 이미 시작했었다.', category: '과거완료' },
+  { pattern: 'I {동사구} to {동사원형}.', meaning: '나는 ~하기 위해 …한다 (to부정사 목적)', example: 'I woke up early to catch the bus.', exampleKo: '나는 버스를 타기 위해 일찍 일어났다.', category: 'to부정사(목적)' },
+  { pattern: '{동명사구} is {형용사}.', meaning: '…하는 것은 ~하다 (동명사 주어)', example: 'Learning a new language is exciting.', exampleKo: '새로운 언어를 배우는 것은 신나는 일이다.', category: '동명사 주어' },
+  { pattern: '{A} is {비교급형용사} than {B}.', meaning: 'A는 B보다 더 ~하다 (비교급)', example: 'This backpack is lighter than that one.', exampleKo: '이 배낭은 저것보다 더 가벽다.', category: '비교급' },
+  { pattern: '{A} is as {형용사} as {B}.', meaning: 'A는 B만큼 ~하다 (원급비교)', example: 'My sister is as tall as I am.', exampleKo: '내 여동생은 나만큼 키가 크다.', category: '원급비교(as~as)' },
+  { pattern: 'If {현재시제절}, {주어} will {동사원형}.', meaning: '만약 ~한다면, …할 것이다 (조건문 1형)', example: 'If it rains tomorrow, we will stay home.', exampleKo: '내일 비가 오면 우리는 집에 있을 것이다.', category: '조건문(1st)' },
+  { pattern: 'Although {절1}, {절2}.', meaning: '비록 ~이지만, …하다 (양보)', example: 'Although it was raining, we went hiking.', exampleKo: '비가 왔지만 우리는 등산을 갔다.', category: '양보(although)' },
+  { pattern: '{주어} {동사구} so that {주어2} can {동사원형}.', meaning: '~가 …할 수 있도록 ~하다 (목적)', example: 'I saved money so that I could buy a new phone.', exampleKo: '나는 새 휴대폰을 살 수 있도록 돈을 모았다.', category: '목적(so that)' },
+  { pattern: 'As soon as {절1}, {절2}.', meaning: '~하자마자 …하다', example: 'As soon as I got home, it started to rain.', exampleKo: '내가 집에 도착하자마자 비가 오기 시작했다.', category: '시간(as soon as)' },
+  { pattern: '{주어} showed me how to {동사원형}.', meaning: '~은 나에게 …하는 방법을 알려주었다', example: 'My mom showed me how to bake bread.', exampleKo: '엄마는 나에게 빵 굽는 법을 알려주셨다.', category: '방법 표현(how to)' },
+  { pattern: '{주어} was able to {동사원형} because {이유}.', meaning: '~은 …때문에 ~할 수 있었다', example: 'I was able to finish the race because I trained hard.', exampleKo: '나는 열심히 훈련했기 때문에 완주할 수 있었다.', category: '능력(be able to)' },
+  { pattern: '{주어} have to {동사원형} before {시점}.', meaning: '~은 …전에 반드시 ~해야 한다', example: 'I have to finish my homework before dinner.', exampleKo: '나는 저녁 먹기 전에 숙제를 끝내야 한다.', category: '의무(have to)' },
+  { pattern: '{주어} used to {동사원형} when {상황}.', meaning: '~은 …할 때 (예전에) ~하곰 했다', example: 'I used to play the piano when I was young.', exampleKo: '나는 어렸을 때 피아노를 치곤 했다.', category: '습관(used to)' },
+  { pattern: '{주어} must be {형용사} because {이유}.', meaning: '~은 …때문에 틀림없이 ~할 것이다 (추측)', example: 'She must be tired because she worked all night.', exampleKo: '그녀는 밤새 일했기 때문에 틀림없이 피곤할 것이다.', category: '추측(must be)' },
+  { pattern: '{상황} made me {동사원형}.', meaning: '~은 나를 …하게 만들었다 (사역동사)', example: 'The sad movie made me cry.', exampleKo: '그 슬픈 영화는 나를 울게 만들었다.', category: '사역동사(make)' },
+  { pattern: 'I saw {대상} {동사원형/현재분사}.', meaning: '나는 ~가 …하는 것을 보았다 (지각동사)', example: 'I saw a cat climbing the tree.', exampleKo: '나는 고양이가 나무에 오르는 것을 보았다.', category: '지각동사(see)' },
+  { pattern: '{주어} want {대상} to {동사원형}.', meaning: '~은 …가 ~하기를 원한다', example: 'My parents want me to become a doctor.', exampleKo: '내 부모님은 내가 의사가 되기를 원하신다.', category: 'want+O+to V' },
+  { pattern: 'It seems that {절}.', meaning: '~인 것 같다', example: 'It seems that he forgot our appointment.', exampleKo: '그는 우리 약속을 잊은 것 같다.', category: 'It seems that' },
+  { pattern: 'I wonder if {절}.', meaning: '나는 ~인지 궁금하다', example: 'I wonder if she will come to the party.', exampleKo: '나는 그녀가 파티에 올지 궁금하다.', category: 'I wonder if' },
+  { pattern: '{주어} am looking forward to {동명사구}.', meaning: '~은 …하기를 기대하고 있다', example: 'I am looking forward to seeing you again.', exampleKo: '나는 너를 다시 만나기를 기대하고 있다.', category: 'look forward to -ing' },
+  { pattern: '{주어} can\'t help {동명사구}.', meaning: '~은 …하지 않을 수 없다', example: 'I can\'t help laughing at his jokes.', exampleKo: '나는 그의 농담에 웃지 않을 수 없다.', category: 'can\'t help -ing' },
+  { pattern: 'There is/are {명사구} in/on {장소}.', meaning: '…에 ~이 있다', example: 'There are many flowers in the garden.', exampleKo: '정원에 꿓이 많이 있다.', category: 'There is/are' },
+  { pattern: '{주어} like both {A} and {B}.', meaning: '~은 A와 B 둘 다 좋아한다', example: 'She likes both painting and singing.', exampleKo: '그녀는 그림 그리기와 노래 부르기 둘 다 좋아한다.', category: 'both A and B' },
+  { pattern: '{주어} will {동사원형} either {A} or {B}.', meaning: '~은 A 또는 B 중 하나를 …할 것이다', example: 'I will choose either the blue one or the red one.', exampleKo: '나는 파란 것 또는 빨간 것 중 하나를 고를 것이다.', category: 'either A or B' },
+  { pattern: '{주어} can eat neither {A} nor {B}.', meaning: '~은 A도 B도 먹을 수 없다', example: 'He can eat neither spicy food nor raw fish.', exampleKo: '그는 매운 음식도 회도 먹을 수 없다.', category: 'neither A nor B' },
+  { pattern: 'No matter how {형용사}, {주어} will {동사원형}.', meaning: '아무리 ~해도, …할 것이다', example: 'No matter how difficult it is, I will finish it.', exampleKo: '아무리 어려워도 나는 그것을 끝낼 것이다.', category: 'no matter how' },
+  { pattern: '{A} is the same as {B}.', meaning: 'A는 B와 같다', example: 'This bag is the same as the one I lost.', exampleKo: '이 가방은 내가 잃어버린 것과 같다.', category: 'the same as' },
+  { pattern: '{주어} prefer {A} to {B}.', meaning: '~은 B보다 A를 더 좋아한다', example: 'I prefer tea to coffee.', exampleKo: '나는 커피보다 차를 더 좋아한다.', category: 'prefer A to B' },
+  { pattern: '{주어} would rather {동사원형구1} than {동사원형구2}.', meaning: '~은 …하느니 차라리 ~하겠다', example: 'I would rather walk than take the bus.', exampleKo: '나는 버스를 타느니 차라리 걱겠다.', category: 'would rather' },
+  { pattern: '{주어} spent {시간} {동명사구}.', meaning: '~은 …하는 데 (시간)을 보냈다', example: 'I spent the whole weekend cleaning my room.', exampleKo: '나는 주말 내내 방 청소를 하며 보냈다.', category: 'spend time -ing' },
+  { pattern: '{주어} am busy {동명사구} these days.', meaning: '~은 요즘 …하느라 바쁘다', example: 'I am busy preparing for the exam these days.', exampleKo: '나는 요즘 시험 준비하느라 바쁘다.', category: 'be busy -ing' },
+  { pattern: '{주어} kept {동명사구} all day.', meaning: '~은 하루 종일 계속 …했다', example: 'It kept raining all day.', exampleKo: '하루 종일 비가 계속 내렸다.', category: 'keep -ing' },
+  { pattern: '{주어} stopped to {동사원형}.', meaning: '~은 …하기 위해 (하던 일을) 멈쳤다', example: 'I stopped to tie my shoes.', exampleKo: '나는 신발낌을 묶기 위해 멈쳤다.', category: 'stop to V' },
+  { pattern: 'Don\'t forget to {동사원형} before {시점}.', meaning: '~하기 전에 …하는 것을 잊지 마라', example: 'Don\'t forget to lock the door before you leave.', exampleKo: '나가기 전에 문 잠그는 것을 잊지 마라.', category: 'remember to V' },
+  { pattern: 'I wish {주어} {과거동사}.', meaning: '~라면 좋을 텐데 (현재 사실 반대 소망)', example: 'I wish I had more free time.', exampleKo: '내게 자유시간이 더 많으면 좋을 텐데.', category: 'I wish + 과거' },
+  { pattern: '{주어} had better {동사원형} right now.', meaning: '~은 지금 당장 …하는 게 좋겠다', example: 'You had better see a doctor right now.', exampleKo: '너는 지금 당장 병원에 가는 게 좋겠다.', category: 'had better' },
+  { pattern: '{주어} am getting used to {동명사구}.', meaning: '~은 …하는 것에 익숙해지고 있다', example: 'I am getting used to living alone.', exampleKo: '나는 혼자 사는 것에 익숙해지고 있다.', category: 'get used to' },
+  { pattern: '{주어들} took turns {동명사구}.', meaning: '~들은 돌아가며 …했다', example: 'We took turns driving on the long trip.', exampleKo: '우리는 긴 여행에서 돌아가며 운전했다.', category: 'take turns -ing' },
+  { pattern: '{주어} ended up {동명사구}.', meaning: '~은 결국 …하게 되었다', example: 'We ended up walking home because we missed the bus.', exampleKo: '우리는 버스를 놓쳐서 결국 걸어서 집에 갔다.', category: 'end up -ing' },
+  { pattern: 'What if {절}?', meaning: '만약 ~라면 어떨까?', example: 'What if we tried a different approach?', exampleKo: '만약 우리가 다른 방법을 시도해본다면 어떨까?', category: 'What if' },
+  { pattern: '{주어} can {동사원형} as long as {조건}.', meaning: '~하는 한 …할 수 있다', example: 'You can stay here as long as you like.', exampleKo: '네가 원하는 만큼 여기 머물러도 좋다.', category: 'as long as' }
 ];
 
 /* ---------------- tabs ---------------- */
@@ -313,15 +365,32 @@ function renderSkeletonLine(pattern) {
   }).join('');
 }
 
+/* ---------------- search helpers ---------------- */
+function templateMatchesSearch(t, term) {
+  if (!term) return true;
+  const hay = [t.pattern, t.meaning, t.category, t.example, t.exampleKo, t.group]
+    .filter(Boolean).join(' ').toLowerCase();
+  return hay.includes(term);
+}
+
 /* ---------------- my template list rendering ---------------- */
 let editingId = null;
 let openGroups = new Set();
+let mineSearchTerm = '';
 
 function renderTplList() {
   document.getElementById('tplCountBadge').textContent = templates.length;
   const wrap = document.getElementById('tplListWrap');
   if (templates.length === 0) {
     wrap.innerHTML = '<p class="empty-note">아직 등록된 템플릿이 없어요. "템플릿 참조" 탭에서 불러오거나 "직접 추가" 탭에서 새로 만들어보세요.</p>';
+    return;
+  }
+  if (mineSearchTerm) {
+    const term = mineSearchTerm.toLowerCase();
+    const filtered = templates.filter(t => templateMatchesSearch(t, term));
+    wrap.innerHTML = filtered.length === 0
+      ? '<p class="empty-note">검색 결과가 없어요.</p>'
+      : filtered.map(t => renderTplCard(t)).join('');
     return;
   }
   const groups = getUniqueGroups();
@@ -421,6 +490,10 @@ document.getElementById('clearAllBtn').addEventListener('click', () => {
   renderTplList();
   refreshGroupOptions();
 });
+document.getElementById('mineSearch').addEventListener('input', e => {
+  mineSearchTerm = e.target.value.trim();
+  renderTplList();
+});
 
 /* ---------------- export / import ---------------- */
 document.getElementById('exportBtn').addEventListener('click', () => {
@@ -471,9 +544,29 @@ document.getElementById('importFile').addEventListener('change', e => {
 });
 
 /* ---------------- library ---------------- */
+let libSearchTerm = '';
+let libCatFilter = '';
+
+function populateLibCatFilter() {
+  const sel = document.getElementById('libCatFilter');
+  const cats = Array.from(new Set(BUILTIN_TEMPLATES.map(t => t.category))).sort((a, b) => a.localeCompare(b, 'ko'));
+  sel.innerHTML = '<option value="">전체 카테고리</option>' + cats.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+}
+
 function renderLibrary() {
   const wrap = document.getElementById('libraryListWrap');
-  wrap.innerHTML = BUILTIN_TEMPLATES.map((t, i) => `
+  const term = libSearchTerm.toLowerCase();
+  const filtered = BUILTIN_TEMPLATES
+    .map((t, i) => Object.assign({}, t, { _i: i }))
+    .filter(t => (!libCatFilter || t.category === libCatFilter) && templateMatchesSearch(t, term));
+
+  document.getElementById('libCountBadge').textContent = filtered.length + ' / ' + BUILTIN_TEMPLATES.length;
+
+  if (filtered.length === 0) {
+    wrap.innerHTML = '<p class="empty-note">검색 결과가 없어요. 다른 검색어나 카테고리를 시도해보세요.</p>';
+    return;
+  }
+  wrap.innerHTML = filtered.map(t => `
     <div class="tpl-card">
       <div class="tpl-top">
         <div>
@@ -484,11 +577,19 @@ function renderLibrary() {
           <span class="tpl-cat">${escapeHtml(t.category)}</span>
         </div>
         <div class="tpl-actions">
-          <button class="btn small primary" onclick="addFromLibrary(${i})">내 템플릿에 추가</button>
+          <button class="btn small primary" onclick="addFromLibrary(${t._i})">내 템플릿에 추가</button>
         </div>
       </div>
     </div>`).join('');
 }
+document.getElementById('libSearch').addEventListener('input', e => {
+  libSearchTerm = e.target.value.trim();
+  renderLibrary();
+});
+document.getElementById('libCatFilter').addEventListener('change', e => {
+  libCatFilter = e.target.value;
+  renderLibrary();
+});
 function addFromLibrary(i) {
   const t = BUILTIN_TEMPLATES[i];
   templates.push({
@@ -660,6 +761,7 @@ function escapeAttr(str) { return escapeHtml(str); }
 /* ---------------- init ---------------- */
 renderTplList();
 refreshGroupOptions();
+populateLibCatFilter();
 renderLibrary();
 renderTplChecks();
 </script>
